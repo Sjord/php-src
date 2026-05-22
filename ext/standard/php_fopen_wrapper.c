@@ -144,12 +144,23 @@ static const php_stream_ops php_stream_input_ops = {
 	NULL  /* set_option */
 };
 
-static const int max_stream_filters = 16;
+static const int max_stream_filters_default = 16;
 
-static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, int read_chain, int write_chain) /* {{{ */
+static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, int read_chain, int write_chain, php_stream_context *context) /* {{{ */
 {
 	char *p, *token = NULL;
 	php_stream_filter *temp_filter;
+	int max_stream_filters = max_stream_filters_default;
+
+    if (context != NULL) {
+        zval *option_val = php_stream_context_get_option(context, "filter", "max_filter_count");
+        if (option_val) {
+            zend_long custom_limit = zval_get_long(option_val);
+            if (custom_limit > 0) {
+                max_stream_filters = (int)custom_limit;
+            }
+        }
+    }
 
 	p = php_strtok_r(filterlist, "|", &token);
 	while (p) {
@@ -368,11 +379,11 @@ static php_stream * php_stream_url_wrap_php(php_stream_wrapper *wrapper, const c
 		p = php_strtok_r(pathdup + 1, "/", &token);
 		while (p) {
 			if (!strncasecmp(p, "read=", 5)) {
-				php_stream_apply_filter_list(stream, p + 5, 1, 0);
+				php_stream_apply_filter_list(stream, p + 5, 1, 0, context);
 			} else if (!strncasecmp(p, "write=", 6)) {
-				php_stream_apply_filter_list(stream, p + 6, 0, 1);
+				php_stream_apply_filter_list(stream, p + 6, 0, 1, context);
 			} else {
-				php_stream_apply_filter_list(stream, p, mode_rw & PHP_STREAM_FILTER_READ, mode_rw & PHP_STREAM_FILTER_WRITE);
+				php_stream_apply_filter_list(stream, p, mode_rw & PHP_STREAM_FILTER_READ, mode_rw & PHP_STREAM_FILTER_WRITE, context);
 			}
 			p = php_strtok_r(NULL, "/", &token);
 		}

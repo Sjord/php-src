@@ -33,6 +33,18 @@ foreach ($blocked_include as $chain) {
     var_dump(include $chain);
 }
 
+$ctx = stream_context_create(['filter' => ['max_filter_count' => 2]]);
+$blocked_read = createFilterChains(3, 'data:text/plain,three');
+foreach ($blocked_read as $chain) {
+    var_dump(file_get_contents($chain, false, $ctx));
+}
+
+$ctx = stream_context_create(['filter' => ['max_filter_count' => 20]]);
+$allowed_read = createFilterChains(19, 'data:text/plain,nineteen');
+foreach ($allowed_read as $chain) {
+    var_dump(file_get_contents($chain, false, $ctx));
+}
+
 // Test that the warning is only given once, even when we add two filters over the limit.
 $blocked_read = createFilterChains(18, 'data:text/plain,eighteen');
 foreach ($blocked_read as $chain) {
