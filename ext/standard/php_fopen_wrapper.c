@@ -146,33 +146,41 @@ static const php_stream_ops php_stream_input_ops = {
 
 static const int max_filter_count_default = 16;
 
-static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, int read_chain, int write_chain, php_stream_context *context) /* {{{ */
+static int php_get_max_filter_count(php_stream_context *context) {
+	if (context != NULL) {
+        zval *option_val = php_stream_context_get_option(context, "filter", "max_filter_count");
+        if (option_val) {
+            zend_long custom_limit = zval_get_long(option_val);
+            if (custom_limit >= 0) {
+                return (int)custom_limit;
+            }
+        }
+    }
+	return -1;
+}
+
+static bool php_stream_has_too_many_filters(php_stream *stream, php_stream_context *context) {
+	int max_filter_count = php_get_max_filter_count(context);
+	if (max_filter_count == -1) {
+		// If not explicitly configured we don't throw an error yet.
+		return false;
+	}
+
+	int count = MAX(php_stream_filter_count(&stream->readfilters), php_stream_filter_count(&stream->writefilters));
+	return count > max_filter_count;
+}
+
+static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, int read_chain, int write_chain, bool warn_filter_count) /* {{{ */
 {
 	char *p, *token = NULL;
 	php_stream_filter *temp_filter;
 
-	const int max_not_set = -1;
-	int max_filter_count = max_not_set;
-    if (context != NULL) {
-        zval *option_val = php_stream_context_get_option(context, "filter", "max_filter_count");
-        if (option_val) {
-            zend_long custom_limit = zval_get_long(option_val);
-            if (custom_limit > 0) {
-                max_filter_count = (int)custom_limit;
-            }
-        }
-    }
-
 	p = php_strtok_r(filterlist, "|", &token);
 	while (p) {
 		int count = read_chain ? php_stream_filter_count(&stream->readfilters) : write_chain ? php_stream_filter_count(&stream->writefilters) : 0;
-		if (max_filter_count == max_not_set && count == max_filter_count_default) {
+		if (warn_filter_count && count == max_filter_count_default) {
 			zend_error(E_DEPRECATED, "Using more than %d filters in a php://filter URL is deprecated, "
 				"set this limit using the stream context option max_filter_count, or use stream_filter_append", max_filter_count_default);
-		} else if (max_filter_count != max_not_set && count >= max_filter_count) {
-			// TODO: raise error according to new stream errors API
-			php_error_docref(NULL, E_WARNING, "Failed to add more than max_filter_count (%d) filters", max_filter_count);
-			return;
 		}
 
 		php_url_decode(p, strlen(p));
@@ -379,22 +387,30 @@ static php_stream * php_stream_url_wrap_php(php_stream_wrapper *wrapper, const c
 			return NULL;
 		}
 
+		bool max_filter_count_not_set = php_get_max_filter_count(context) == -1;
+
 		*p = '\0';
 
 		p = php_strtok_r(pathdup + 1, "/", &token);
 		while (p) {
 			if (!strncasecmp(p, "read=", 5)) {
-				php_stream_apply_filter_list(stream, p + 5, 1, 0, context);
+				php_stream_apply_filter_list(stream, p + 5, 1, 0, max_filter_count_not_set);
 			} else if (!strncasecmp(p, "write=", 6)) {
-				php_stream_apply_filter_list(stream, p + 6, 0, 1, context);
+				php_stream_apply_filter_list(stream, p + 6, 0, 1, max_filter_count_not_set);
 			} else {
-				php_stream_apply_filter_list(stream, p, mode_rw & PHP_STREAM_FILTER_READ, mode_rw & PHP_STREAM_FILTER_WRITE, context);
+				php_stream_apply_filter_list(stream, p, mode_rw & PHP_STREAM_FILTER_READ, mode_rw & PHP_STREAM_FILTER_WRITE, max_filter_count_not_set);
 			}
 			p = php_strtok_r(NULL, "/", &token);
 		}
 		efree(pathdup);
 
 		if (EG(exception)) {
+			php_stream_close(stream);
+			return NULL;
+		}
+
+		if (php_stream_has_too_many_filters(stream, context)) {
+			php_stream_wrapper_log_error(wrapper, options, "too many filters");
 			php_stream_close(stream);
 			return NULL;
 		}

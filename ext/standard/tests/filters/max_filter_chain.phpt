@@ -68,30 +68,42 @@ int(1)
 int(1)
 int(1)
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(9) "SEVENTEEN"
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(9) "SEVENTEEN"
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(9) "SEVENTEEN"
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 int(1)
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 int(1)
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 int(1)
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Warning: file_get_contents(php://filter/string.toupper|string.toupper|string.toupper/resource=data:text/plain,three): Failed to open stream: too many filters in %s on line %d
+bool(false)
+
+Warning: file_get_contents(php://filter/string.toupper/string.toupper/string.toupper/resource=data:text/plain,three): Failed to open stream: too many filters in %s on line %d
+bool(false)
+
+Warning: file_get_contents(php://filter/string.toupper/resource=php://filter/string.toupper/resource=php://filter/string.toupper/resource=data:text/plain,three): Failed to open stream: too many filters in %s on line %d
+bool(false)
+string(8) "NINETEEN"
+string(8) "NINETEEN"
+string(8) "NINETEEN"
+
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(8) "EIGHTEEN"
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(8) "EIGHTEEN"
 
-Deprecated: Using more than 16 filters in a php://filter URL is deprecated, use stream_filter_append to chain more than 16 filters in %smax_filter_chain.php on line %d
+Deprecated: Using more than 16 filters in a php://filter URL is deprecated, set this limit using the stream context option max_filter_count, or use stream_filter_append in %smax_filter_chain.php on line %d
 string(8) "EIGHTEEN"
 string(20) "STREAM_FILTER_APPEND"
