@@ -144,31 +144,39 @@ static const php_stream_ops php_stream_input_ops = {
 	NULL  /* set_option */
 };
 
-static const int max_stream_filters_default = 16;
+static const int max_filter_count_default = 16;
 
 static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, int read_chain, int write_chain, php_stream_context *context) /* {{{ */
 {
 	char *p, *token = NULL;
 	php_stream_filter *temp_filter;
-	int max_stream_filters = max_stream_filters_default;
 
+	const int max_not_set = -1;
+	int max_filter_count = max_not_set;
     if (context != NULL) {
         zval *option_val = php_stream_context_get_option(context, "filter", "max_filter_count");
         if (option_val) {
             zend_long custom_limit = zval_get_long(option_val);
             if (custom_limit > 0) {
-                max_stream_filters = (int)custom_limit;
+                max_filter_count = (int)custom_limit;
             }
         }
     }
 
 	p = php_strtok_r(filterlist, "|", &token);
 	while (p) {
+		int count = read_chain ? php_stream_filter_count(&stream->readfilters) : write_chain ? php_stream_filter_count(&stream->writefilters) : 0;
+		if (max_filter_count == max_not_set && count == max_filter_count_default) {
+			zend_error(E_DEPRECATED, "Using more than %d filters in a php://filter URL is deprecated, "
+				"set this limit using the stream context option max_filter_count, or use stream_filter_append", max_filter_count_default);
+		} else if (max_filter_count != max_not_set && count >= max_filter_count) {
+			// TODO: raise error according to new stream errors API
+			php_error_docref(NULL, E_WARNING, "Failed to add more than max_filter_count (%d) filters", max_filter_count);
+			return;
+		}
+
 		php_url_decode(p, strlen(p));
 		if (read_chain) {
-			if (php_stream_filter_count(&stream->readfilters) == max_stream_filters) {
-				zend_error(E_DEPRECATED, "Using more than %d filters in a php://filter URL is deprecated, use stream_filter_append to chain more than %d filters", max_stream_filters, max_stream_filters);
-			}
 			if ((temp_filter = php_stream_filter_create(p, NULL, php_stream_is_persistent(stream)))) {
 				php_stream_filter_append(&stream->readfilters, temp_filter);
 			} else {
@@ -176,9 +184,6 @@ static void php_stream_apply_filter_list(php_stream *stream, char *filterlist, i
 			}
 		}
 		if (write_chain) {
-			if (php_stream_filter_count(&stream->writefilters) == max_stream_filters) {
-				zend_error(E_DEPRECATED, "Using more than %d filters in a php://filter URL is deprecated, use stream_filter_append to chain more than %d filters", max_stream_filters, max_stream_filters);
-			}
 			if ((temp_filter = php_stream_filter_create(p, NULL, php_stream_is_persistent(stream)))) {
 				php_stream_filter_append(&stream->writefilters, temp_filter);
 			} else {
